@@ -29,9 +29,9 @@ THE VOICE CONSOLE: exact phrases, spoken (or typed) alone, control the
 session itself so you never go back to the keyboard: "clear the
 session" / "compact the session" / "switch to the deep model" / "back
 to the fast model" / "set effort to low" (or medium, high, max) /
-"usage report" / "pause" and "resume" (stand by without hanging up) /
-"switch to haiku" / "switch to sonnet" / "switch to the deep model"
-(or Fn+Option cycles tiers) /
+"usage report" / "pause" and "resume" (stand by without hanging up;
+Fn+Control toggles) / "switch to haiku" / "switch to sonnet" /
+"switch to the deep model" (Fn+Option cycles tiers) /
 "go hands free" and "push to talk mode" (the MIC) /
 "stop asking for permission" and "start asking again" (permissions,
 called auto-approve, a different axis than the microphone on purpose).
@@ -748,10 +748,12 @@ async def amain():
         start_control_panel(cmd_q, cport)
         log(f"[backtalk] control panel http://127.0.0.1:{cport}/")
     hk = CFG.get("hotkeys") or {}
-    if hk.get("toggle_model") or hk.get("pause") or hk.get("resume"):
+    if (hk.get("toggle_model") or hk.get("toggle_pause")
+            or hk.get("pause") or hk.get("resume")):
         HotkeyService(cmd_q, hk).start()
-        log("[backtalk] hotkeys on (toggle_model="
-            f"{hk.get('toggle_model', 'fn+option')})")
+        log("[backtalk] hotkeys on (model="
+            f"{hk.get('toggle_model', 'fn+option')}, pause="
+            f"{hk.get('toggle_pause', 'fn+control')})")
     # a configured effort level applies at launch (saved by the spoken
     # "set effort to X", or written by the person's agent on request)
     boot_effort = str(CFG.get("effort") or "").strip().lower()
@@ -823,6 +825,8 @@ async def amain():
             except ValueError:
                 i = 0
             cmd = _MODEL_CYCLE[(i + 1) % len(_MODEL_CYCLE)]
+        elif cmd == "toggle_pause":
+            cmd = "resume" if _PAUSED["on"] else "pause"
         if cmd == "fast":
             cmd = "haiku"
         if cmd not in ("pause", "resume", "haiku", "sonnet", "deep"):

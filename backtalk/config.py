@@ -124,6 +124,7 @@ DEFAULTS = {
     # need a fallback on some keyboards — try ctrl+option+m in hotkeys.
     "hotkeys": {
         "toggle_model": "fn+option",
+        "toggle_pause": "fn+control",
         "pause": "",
         "resume": "",
     },

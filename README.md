@@ -130,7 +130,8 @@ Voice switches apply for the **current session**; edit those keys (or ask your a
 | **Face overlay** | Move the mouse on the visualizer — buttons bottom-right: Pause, Resume, Haiku, Sonnet, Opus, Cycle |
 | **Control panel** | Double-click `Open Control.command` or http://127.0.0.1:8792/ |
 | **Voice** | Say **`pause`** or **`resume`** (exact phrases, spoken alone) |
-| **Hotkey** | **Fn+Option** cycles **Haiku → Sonnet → Opus** (fallback: **Ctrl+Option+M**) |
+| **Hotkey (pause)** | **Fn+Control** toggles pause ↔ resume |
+| **Hotkey (model)** | **Fn+Option** cycles **Haiku → Sonnet → Opus** (fallback: **Ctrl+Option+M**) |
 | **Voice models** | **`switch to haiku`** / **`switch to sonnet`** / **`switch to the deep model`** (exact phrases) |
 
 ### If something goes wrong

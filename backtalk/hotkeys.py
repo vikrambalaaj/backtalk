@@ -5,7 +5,8 @@ import threading
 from pynput import keyboard
 
 # macOS: fn is not always a standalone key event; register several chords.
-_DEFAULT_TOGGLE = ("<fn>+<alt>", "<alt>+<fn>", "<ctrl>+<alt>+m")
+_DEFAULT_TOGGLE_MODEL = ("<fn>+<alt>", "<alt>+<fn>", "<ctrl>+<alt>+m")
+_DEFAULT_TOGGLE_PAUSE = ("<fn>+<ctrl>", "<ctrl>+<fn>")
 
 
 def _to_pynput(spec: str) -> list[str]:
@@ -47,20 +48,29 @@ class HotkeyService:
         self._listener = None
         self._stop = threading.Event()
 
+    def _register(self, hotkeys: dict, cmd: str, spec: str,
+                  fallbacks: tuple[str, ...] = ()):
+        chords = _to_pynput(spec)
+        if not chords and fallbacks:
+            chords = list(fallbacks)
+        for chord in chords:
+            hotkeys[chord] = lambda c=cmd: self._out_q.put(c)
+
     def start(self):
         hotkeys: dict[str, callable] = {}
-        toggle = self._bindings.get("toggle_model", "fn+option")
-        for spec in _to_pynput(toggle):
-            hotkeys[spec] = lambda: self._out_q.put("toggle_model")
-        if not hotkeys:
-            for spec in _DEFAULT_TOGGLE:
-                hotkeys[spec] = lambda: self._out_q.put("toggle_model")
-        pause = self._bindings.get("pause", "")
-        for spec in _to_pynput(pause):
-            hotkeys[spec] = lambda: self._out_q.put("pause")
-        resume = self._bindings.get("resume", "")
-        for spec in _to_pynput(resume):
-            hotkeys[spec] = lambda: self._out_q.put("resume")
+        b = self._bindings
+        if b.get("toggle_model", "fn+option"):
+            self._register(hotkeys, "toggle_model",
+                           b.get("toggle_model", "fn+option"),
+                           _DEFAULT_TOGGLE_MODEL)
+        if b.get("toggle_pause", "fn+control"):
+            self._register(hotkeys, "toggle_pause",
+                           b.get("toggle_pause", "fn+control"),
+                           _DEFAULT_TOGGLE_PAUSE)
+        if b.get("pause"):
+            self._register(hotkeys, "pause", b["pause"])
+        if b.get("resume"):
+            self._register(hotkeys, "resume", b["resume"])
 
         def run():
             try:
