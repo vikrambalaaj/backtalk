@@ -20,6 +20,25 @@
 # Terminal-invoked (inherits the terminal's mic permission). Ctrl-C hangs up.
 cd "$(dirname "$0")"
 export PATH="$HOME/.local/bin:/opt/homebrew/bin:/usr/local/bin:$PATH"
+# backtalk inherits mic + Input Monitoring from the HOST terminal app.
+# Cursor's integrated terminal does NOT get global key events even when
+# Cursor itself is in Accessibility — the voice line must run in
+# Terminal.app (double-click "Jarvis Voice.command").
+if [[ "$(uname -s)" == "Darwin" && "${BACKTALK_ALLOW_CURSOR:-}" != "1" ]]; then
+  case "${TERM_PROGRAM:-}${PPROCESS:-}" in
+    *Cursor*|*cursor*)
+      echo "[backtalk] Refusing to run from Cursor's terminal — push-to-talk needs Terminal.app." >&2
+      echo "[backtalk] Opening Jarvis Voice in Terminal…" >&2
+      exec /usr/bin/open -a Terminal "$(pwd)/Jarvis Voice.command"
+      ;;
+  esac
+  # Parent is often Cursor Helper even when TERM_PROGRAM is unset.
+  parent="$(ps -p "${PPID:-0}" -o comm= 2>/dev/null || true)"
+  if [[ "$parent" == *Cursor* ]]; then
+    echo "[backtalk] Detected Cursor host (ppid=$PPID) — opening Terminal.app." >&2
+    exec /usr/bin/open -a Terminal "$(pwd)/Jarvis Voice.command"
+  fi
+fi
 # WSL2 self-heal. PortAudio's ALSA pulse plugin looks for the socket at
 # the standard runtime path whatever $PULSE_SERVER says, and WSLg only
 # creates it at /mnt/wslg/PulseServer. Without this link, playback does

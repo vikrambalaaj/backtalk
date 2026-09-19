@@ -43,10 +43,119 @@ macOS needs Input Monitoring permission for the hosting terminal
 works out of the box; some Linux desktops need the user in the `input`
 group or an X11 session.
 """
+import os
+import sys
 import threading
 import time
 
 from pynput import keyboard
+
+
+def _hosted_under_cursor() -> bool:
+    """Cursor's integrated terminal cannot receive global key events."""
+    if os.environ.get("BACKTALK_ALLOW_CURSOR") == "1":
+        return False
+    if "Cursor" in (os.environ.get("TERM_PROGRAM") or ""):
+        return True
+    try:
+        import subprocess
+        pid = os.getpid()
+        for _ in range(10):
+            r = subprocess.run(["ps", "-p", str(pid), "-o", "ppid=,comm="],
+                               capture_output=True, text=True, timeout=2)
+            if r.returncode != 0:
+                break
+            parts = (r.stdout or "").strip().split(None, 1)
+            if len(parts) < 2:
+                break
+            ppid, name = parts[0], parts[1]
+            if "Cursor" in name:
+                return True
+            if "Terminal.app" in name or name == "Terminal":
+                return False
+            pid = int(ppid)
+    except Exception:
+        pass
+    return False
+
+
+def _cgevent_tap_ok() -> bool:
+    """macOS: can this process install a session key tap?"""
+    try:
+        from Quartz import (CGEventTapCreate, kCGSessionEventTap,
+                            kCGHeadInsertEventTap,
+                            kCGEventTapOptionListenOnly,
+                            CGEventMaskBit, kCGEventKeyDown)
+        tap = CGEventTapCreate(kCGSessionEventTap, kCGHeadInsertEventTap,
+                               kCGEventTapOptionListenOnly,
+                               CGEventMaskBit(kCGEventKeyDown),
+                               lambda *a: None, None)
+        return tap is not None
+    except Exception:
+        return False
+
+
+def input_monitoring_ok() -> bool:
+    """True when this process can receive global key events (macOS).
+
+    pynput's listener starts even without permission, but never fires —
+    which reads as a broken talk key with no error. Cursor's terminal
+    is a special case: CGEventTap can succeed while pynput still cannot.
+
+    The CGEventTap probe is authoritative: pynput's startup probe can
+    false-negative on Terminal.app even when Input Monitoring is granted
+    (listener.running stays False while stderr says 'not trusted')."""
+    if sys.platform != "darwin":
+        return True
+    if _hosted_under_cursor():
+        return False
+    if _cgevent_tap_ok():
+        return True
+    import io
+    from contextlib import redirect_stderr
+    buf = io.StringIO()
+    listener = keyboard.Listener(on_press=lambda k: None)
+    with redirect_stderr(buf):
+        listener.start()
+        time.sleep(0.35)
+        err = buf.getvalue()
+        ok = listener.running and "not trusted" not in err.lower()
+        listener.stop()
+    return ok
+
+
+def hosting_terminal_name() -> str:
+    """Best-effort name of the app hosting this voice line."""
+    if sys.platform != "darwin":
+        return "your terminal"
+    term = os.environ.get("TERM_PROGRAM")
+    if term:
+        # System Settings lists "Terminal", not "Apple Terminal".
+        if term.lower() in ("apple terminal", "terminal"):
+            return "Terminal"
+        return term.replace("_", " ")
+    try:
+        import subprocess
+        pid = os.getpid()
+        for _ in range(8):
+            r = subprocess.run(["ps", "-p", str(pid), "-o", "ppid=,comm="],
+                               capture_output=True, text=True, timeout=2)
+            if r.returncode != 0:
+                break
+            parts = (r.stdout or "").strip().split(None, 1)
+            if len(parts) < 2:
+                break
+            ppid, name = parts[0], parts[1]
+            if "Terminal.app" in name or name == "Terminal":
+                return "Terminal"
+            if "Cursor" in name:
+                return "Cursor"
+            if "iTerm" in name:
+                return "iTerm"
+            pid = int(ppid)
+    except Exception:
+        pass
+    return "your terminal"
 
 
 def resolve_key(name: str):
@@ -90,6 +199,12 @@ class PTTListener:
                                            on_release=self._on_release)
         self._listener.daemon = True
         self._listener.start()
+        time.sleep(0.15)   # listener.running settles async on macOS
+
+    @property
+    def ok(self) -> bool:
+        """False when the global key hook never started (PTT will hang)."""
+        return bool(self._listener.running)
 
     def _on_press(self, k):
         if k != self._key:

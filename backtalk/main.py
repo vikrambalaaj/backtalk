@@ -67,7 +67,7 @@ from backtalk.config import CFG
 from backtalk.ears import (Ears, explain_audio_failure, record_held,
                            warm as warm_ears)
 from backtalk.mouth import Mouth
-from backtalk.ptt import PTTListener
+from backtalk.ptt import PTTListener, hosting_terminal_name, input_monitoring_ok
 from backtalk.vlog import log
 
 NAME = CFG["name"]
@@ -674,6 +674,19 @@ async def amain():
     log(f"[backtalk] up — agent={NAME} dir={CFG['agent_dir']} "
         f"model={brain.model} mic={mode} "
         f"(say 'goodbye {NAME.lower()}' to hang up)")
+    ptt_ok = input_monitoring_ok()
+    if _MIC["mode"] == "ptt" and not ptt_ok:
+        host = hosting_terminal_name()
+        log(f"[ptt] Input Monitoring denied for {host!r} — switching to hands-free")
+        _MIC["mode"] = "open"
+        _MIC["gen"] += 1
+        _write_config_key("mic_mode", "open")
+        mouth.say(
+            f"Push to talk is not available from {host}. "
+            "I switched to hands-free listening so we can talk now. "
+            "Open System Settings, Privacy and Security, Input Monitoring, "
+            f"enable {host}, restart this window, then say push to talk mode "
+            "to bring the button back.")
     mouth.say(CFG["greeting"])
 
     loop = asyncio.get_event_loop()
@@ -945,6 +958,13 @@ async def amain():
         # callable closes the in-flight open mic promptly, and any
         # capture born under an old gen is discarded unprocessed.
         ptt = PTTListener(CFG["ptt_key"])
+        if _MIC["mode"] == "ptt" and not ptt.ok:
+            log("[ptt] key listener failed to start — switching to hands-free")
+            _MIC["mode"] = "open"
+            _MIC["gen"] += 1
+            _write_config_key("mic_mode", "open")
+            mouth.say("The talk key is not working, so I switched to "
+                      "hands-free listening. Just speak normally.")
         press_fut: asyncio.Future | None = None
         mic_fut: asyncio.Future | None = None
         mic_gen_seen = _MIC["gen"]
