@@ -20,7 +20,7 @@ echo "== backtalk setup =="
 
 # macOS: downloaded launchers often carry quarantine; clear on our scripts.
 if [[ "$(uname -s)" == "Darwin" ]]; then
-  for f in "Install Backtalk.command" "Start Voice.command" "Jarvis Voice.command" setup.sh install.sh run.sh install-mac.sh; do
+  for f in "Install Backtalk.command" "Start Voice.command" "Jarvis Voice.command" setup.sh install.sh run.sh install-mac.sh install-visualizer.sh make-desktop-launcher.sh; do
     [ -f "$f" ] && xattr -d com.apple.quarantine "$f" 2>/dev/null || true
   done
 fi

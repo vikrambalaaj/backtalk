@@ -1,5 +1,5 @@
 #!/bin/bash
-# Put a Desktop shortcut that always points at this install folder.
+# Desktop shortcuts: voice, face, and optional full stack.
 set -euo pipefail
 cd "$(dirname "$0")"
 export PATH="$HOME/.local/bin:/opt/homebrew/bin:/usr/local/bin:$PATH"
@@ -9,15 +9,36 @@ NAME="Voice"
 if [ -f backtalk.json ]; then
   NAME="$(.venv/bin/python -c "import json; print(json.load(open('backtalk.json')).get('name','Voice'))" 2>/dev/null || echo Voice)"
 fi
-DEST="$HOME/Desktop/${NAME} Voice.command"
 
-cat > "$DEST" <<EOF
+VIS=""
+if [ -f .visualizer-path ]; then
+  VIS="$(cat .visualizer-path)"
+elif [ -x "../ai-visualizer/run.sh" ]; then
+  VIS="$(cd ../ai-visualizer && pwd)"
+fi
+
+write_launcher() {
+  local dest="$1"
+  local body="$2"
+  cat > "$dest" <<EOF
 #!/bin/bash
 export PATH="\$HOME/.local/bin:/opt/homebrew/bin:/usr/local/bin:\$PATH"
-cd "$REPO"
-exec ./run.sh
+$body
 EOF
-chmod +x "$DEST"
-xattr -d com.apple.quarantine "$DEST" 2>/dev/null || true
-echo "Desktop launcher: $DEST"
-echo "Double-click it to start talking (install ./setup.sh first if you have not)."
+  chmod +x "$dest"
+  xattr -d com.apple.quarantine "$dest" 2>/dev/null || true
+  echo "Desktop launcher: $dest"
+}
+
+write_launcher "$HOME/Desktop/${NAME} Voice.command" "cd \"$REPO\"
+exec ./run.sh"
+
+if [ -n "$VIS" ] && [ -x "$VIS/run.sh" ]; then
+  write_launcher "$HOME/Desktop/${NAME} Face.command" "cd \"$VIS\"
+exec ./run.sh"
+  write_launcher "$HOME/Desktop/${NAME} Stack.command" "cd \"$VIS\"
+./run.sh &
+sleep 2
+cd \"$REPO\"
+exec ./run.sh"
+fi

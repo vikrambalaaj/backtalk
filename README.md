@@ -32,11 +32,15 @@ The hearing and the voice run local: free, offline models on your machine, no vo
 2. **Double-click `Install Backtalk.command`** — that's it. First run:
    - Installs Homebrew (if needed) and `espeak-ng`
    - Creates the Python environment and downloads speech models (~2 GB once)
-   - Creates `backtalk.json` and a **Desktop shortcut**
+   - **Clones [ai-visualizer](https://github.com/vikrambalaaj/ai-visualizer)** beside this folder (`../ai-visualizer`) and wires it to backtalk
+   - Creates `backtalk.json` and **Desktop shortcuts** (Voice, Face, Stack)
    - Starts the voice line in Terminal.app
 3. Grant **Microphone** when asked. For push-to-talk, enable **Input Monitoring** for Terminal (System Settings → Privacy & Security), then restart Terminal.
 
-After the first install, use the **Desktop shortcut** or **`Start Voice.command`** for daily use.
+After the first install, use the **Desktop shortcuts**:
+- **`<name> Stack.command`** — face in the browser + voice (recommended)
+- **`<name> Voice.command`** — voice only
+- **`<name> Face.command`** — visualizer only
 
 **Controls while running:**
 - **Visual buttons:** move the mouse on the [ai-visualizer](https://github.com/jaredrhod/ai-visualizer) face (bottom-right: Pause, Resume, Fast, Deep, Toggle) or open **`Open Control.command`** / http://127.0.0.1:8792/

@@ -10,6 +10,7 @@ if [[ "$(uname -s)" != "Darwin" ]]; then
 fi
 
 echo "== backtalk macOS install =="
+NAME="Voice"
 
 # Double-clicked .command files get a bare PATH and Gatekeeper quarantine.
 chmod +x *.sh *.command 2>/dev/null || true
@@ -33,12 +34,19 @@ ensure_brew() {
 
 ensure_brew
 ./setup.sh --yes
+if [ -f backtalk.json ]; then
+  NAME="$(.venv/bin/python -c "import json; print(json.load(open('backtalk.json')).get('name','Voice'))" 2>/dev/null || echo Voice)"
+fi
+./install-visualizer.sh
 ./make-desktop-launcher.sh
 touch .backtalk-ready
 
 echo ""
 echo "== install complete =="
-echo "A Desktop shortcut is ready. Use it anytime to start the voice line."
+echo "Desktop shortcuts:"
+echo "  • ${NAME:-Your agent} Voice.command — talk"
+echo "  • ${NAME:-Your agent} Face.command  — ai-visualizer (if cloned)"
+echo "  • ${NAME:-Your agent} Stack.command — face + voice together"
 echo ""
 echo "One-time macOS permissions:"
 echo "  • Microphone — allow when Terminal asks"
