@@ -30,6 +30,7 @@ session itself so you never go back to the keyboard: "clear the
 session" / "compact the session" / "switch to the deep model" / "back
 to the fast model" / "set effort to low" (or medium, high, max) /
 "usage report" / "pause" and "resume" (stand by without hanging up) /
+"switch to the deep model" / "back to the fast model" (or Fn+Option) /
 "go hands free" and "push to talk mode" (the MIC) /
 "stop asking for permission" and "start asking again" (permissions,
 called auto-approve, a different axis than the microphone on purpose).
@@ -68,6 +69,8 @@ from backtalk.config import CFG
 from backtalk.ears import (Ears, explain_audio_failure, record_held,
                            warm as warm_ears)
 from backtalk.mouth import Mouth
+from backtalk.control import start_control_panel
+from backtalk.hotkeys import HotkeyService
 from backtalk.ptt import PTTListener, hosting_terminal_name, input_monitoring_ok
 from backtalk.vlog import log
 
@@ -107,6 +110,8 @@ _AUTOAPPROVE = {"on": False}
 _MIC = {"mode": "ptt", "gen": 0, "btn": False}
 # Stand-by without hanging up: no open mic, no turns, PTT only for "resume".
 _PAUSED = {"on": False}
+# Tracks whether the deep-work model is active (for toggle + visual bus).
+_MODEL_DEEP = {"on": False}
 
 # Approvals are EXACT matches after normalization, never prefixes:
 # "yesterday", "yes or no", and "yes, but do not overwrite" must all
@@ -726,8 +731,19 @@ async def amain():
         mouth.wait_done(timeout=30)
         raise SystemExit(1)
     log("[backtalk] brain warm")
+    signals.set_model_tier("fast")
     # the hidden warmup ping is plumbing, not conversation
     brain.session.update(turns=0, out_tokens=0, in_tokens=0, cost=0.0)
+    cmd_q: queue.Queue[str] = queue.Queue()
+    if CFG.get("control_panel", True):
+        start_control_panel(cmd_q, int(CFG.get("control_port", 8792)))
+        log(f"[backtalk] control panel http://127.0.0.1:"
+            f"{int(CFG.get('control_port', 8792))}/")
+    hk = CFG.get("hotkeys") or {}
+    if hk.get("toggle_model") or hk.get("pause") or hk.get("resume"):
+        HotkeyService(cmd_q, hk).start()
+        log("[backtalk] hotkeys on (toggle_model="
+            f"{hk.get('toggle_model', 'fn+option')})")
     # a configured effort level applies at launch (saved by the spoken
     # "set effort to X", or written by the person's agent on request)
     boot_effort = str(CFG.get("effort") or "").strip().lower()
@@ -754,6 +770,31 @@ async def amain():
             mouth.say("That command hit an error. Check the log.")
             signals.set_state("idle")
 
+    async def _cancel_speak_task():
+        nonlocal speak_task
+        if speak_task and not speak_task.done():
+            speak_task.cancel()
+            mouth.shut_up()
+            try:
+                await speak_task
+            except asyncio.CancelledError:
+                pass
+            except Exception:
+                pass
+            speak_task = None
+
+    async def run_remote(cmd: str):
+        """Control panel / hotkey commands."""
+        cmd = (cmd or "").strip().lower()
+        if cmd == "toggle_model":
+            cmd = "deep" if not _MODEL_DEEP["on"] else "fast"
+        if cmd not in ("pause", "resume", "deep", "fast"):
+            return
+        log(f"[control] {cmd}")
+        await _cancel_speak_task()
+        await brain.reset_turn()
+        await run_console(cmd)
+
     async def _run_console_inner(verb):
         _deny_pending()
         await brain.reset_turn()
@@ -770,9 +811,13 @@ async def amain():
                       "get slower. Say back to the fast model when "
                       "you're done.")
             resp = await brain.command(f"/model {CFG['deep_model']}")
+            _MODEL_DEEP["on"] = True
+            signals.set_model_tier("deep")
             say_after = "Deep model online, for this session only."
         elif verb == "fast":
             resp = await brain.command(f"/model {CFG['model']}")
+            _MODEL_DEEP["on"] = False
+            signals.set_model_tier("fast")
             say_after = "Back on the fast model."
         elif verb.startswith("effort:"):
             lvl = verb.split(":", 1)[1]
@@ -1014,6 +1059,11 @@ async def amain():
                     or (not barge_in and mouth.speaking))
         mic_fails = 0
         while True:
+            while not cmd_q.empty():
+                try:
+                    await run_remote(cmd_q.get_nowait())
+                except Exception as e:
+                    log(f"[control] command failed: {e!r}")
             if _MIC["gen"] != mic_gen_seen:
                 mic_gen_seen = _MIC["gen"]
                 # consume futures that completed under the old mode so

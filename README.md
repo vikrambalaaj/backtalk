@@ -38,7 +38,10 @@ The hearing and the voice run local: free, offline models on your machine, no vo
 
 After the first install, use the **Desktop shortcut** or **`Start Voice.command`** for daily use.
 
-**Voice console:** say **`pause`** to stand by without hanging up; say **`resume`** to listen again (hold the talk key and say it, or type it in the terminal).
+**Controls while running:**
+- **Visual buttons:** move the mouse on the [ai-visualizer](https://github.com/jaredrhod/ai-visualizer) face (bottom-right: Pause, Resume, Fast, Deep, Toggle) or open **`Open Control.command`** / http://127.0.0.1:8792/
+- **Voice:** say **`pause`** / **`resume`** (exact phrases)
+- **Hotkey:** **Fn+Option** toggles fast ↔ deep model (fallback: **Ctrl+Option+M**). Customize in `backtalk.json` → `hotkeys`.
 
 **Do not start from Cursor's terminal** on macOS — push-to-talk needs Terminal.app.
 

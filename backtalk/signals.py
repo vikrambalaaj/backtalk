@@ -21,6 +21,7 @@ The voice line leaves notes; faces read the notes. That one dumb trick
 is the whole integration surface:
 
   .voice_state        idle | listening | thinking | speaking | paused
+  .voice_model        fast | deep   (which brain tier is active)
   .voice_waveform     JSON {ts, samples: [64 floats]} while audio plays
   .voice_loading_pid  exists while the thinking sound is playing
   .voice_rate_limits  JSON {window: {utilization, resets_at}} — only
@@ -48,6 +49,7 @@ from backtalk.config import CFG
 
 _DIR = CFG["signals_dir"]
 _STATE_FILE = os.path.join(_DIR, ".voice_state")
+_MODEL_FILE = os.path.join(_DIR, ".voice_model")
 _WAVEFORM_FILE = os.path.join(_DIR, ".voice_waveform")
 _LOADING_PID_FILE = os.path.join(_DIR, ".voice_loading_pid")
 _DIRECTION_FILE = os.path.join(_DIR, ".voice_direction")
@@ -78,6 +80,32 @@ def set_state(name: str):
                 f.write(name)
         except OSError:
             pass
+
+
+def read_state() -> str:
+    try:
+        with open(_STATE_FILE) as f:
+            return f.read().strip() or "idle"
+    except OSError:
+        return "idle"
+
+
+def set_model_tier(tier: str):
+    """Publish fast/deep for faces and the control panel."""
+    tier = "deep" if str(tier).lower().startswith("deep") else "fast"
+    try:
+        with open(_MODEL_FILE, "w") as f:
+            f.write(tier)
+    except OSError:
+        pass
+
+
+def read_model_tier() -> str:
+    try:
+        t = open(_MODEL_FILE).read().strip().lower()
+        return "deep" if t == "deep" else "fast"
+    except OSError:
+        return "fast"
 
 
 def feed_waveform(pcm: np.ndarray):

@@ -3,5 +3,12 @@
   "name": "Assistant",
   "ptt_key": "home",
   "voice": "bm_lewis",
-  "stt_model": "small.en"
+  "stt_model": "small.en",
+  "control_panel": true,
+  "control_port": 8792,
+  "hotkeys": {
+    "toggle_model": "fn+option",
+    "pause": "",
+    "resume": ""
+  }
 }

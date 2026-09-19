@@ -115,6 +115,16 @@ DEFAULTS = {
     # A resume that fails falls back to a fresh session and says so in
     # the log. (Grew out of the same community proposal, issue #1.)
     "resume_last_session": False,
+    # Browser control panel (pause/resume/model buttons) at control_port.
+    "control_panel": True,
+    "control_port": 8792,
+    # Global hotkeys (Input Monitoring required on macOS). fn+option may
+    # need a fallback on some keyboards — try ctrl+option+m in hotkeys.
+    "hotkeys": {
+        "toggle_model": "fn+option",
+        "pause": "",
+        "resume": "",
+    },
     # Publish your Claude usage (the five-hour and weekly windows) on the
     # signal bus so a face can draw it. OFF by default and deliberately
     # so: this is your own account spend, and the faces this feeds are
