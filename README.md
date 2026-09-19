@@ -22,44 +22,139 @@ The hearing and the voice run local: free, offline models on your machine, no vo
 
 ## One-click install (macOS)
 
-**Prerequisites:** [Claude Code](https://claude.com/claude-code) installed and signed in.
+Installs **voice + face** together: [backtalk](https://github.com/vikrambalaaj/backtalk) and [ai-visualizer](https://github.com/vikrambalaaj/ai-visualizer).
 
-1. Download or clone this repo:
-   ```
-   git clone https://github.com/vikrambalaaj/backtalk
-   cd backtalk
-   ```
-2. **Double-click `Install Backtalk.command`** — that's it. First run:
-   - Installs Homebrew (if needed) and `espeak-ng`
-   - Creates the Python environment and downloads speech models (~2 GB once)
-   - **Clones [ai-visualizer](https://github.com/vikrambalaaj/ai-visualizer)** beside this folder (`../ai-visualizer`) and wires it to backtalk
-   - Creates `backtalk.json` and **Desktop shortcuts** (Voice, Face, Stack)
-   - Starts the voice line in Terminal.app
-3. Grant **Microphone** when asked. For push-to-talk, enable **Input Monitoring** for Terminal (System Settings → Privacy & Security), then restart Terminal.
+### Before you start
 
-After the first install, use the **Desktop shortcuts**:
-- **`<name> Stack.command`** — face in the browser + voice (recommended; face runs detached)
-- **`<name> Voice.command`** — voice only
-- **`<name> Face.command`** — visualizer only
+You need these **once**, before double-clicking anything:
 
-Re-running setup re-wires the visualizer if you move folders (`./setup.sh --yes`).
+| Requirement | What to do |
+|-------------|------------|
+| **macOS** | Ventura or later recommended |
+| **[Claude Code](https://claude.com/claude-code)** | Install it and run `claude` once so you are signed in |
+| **Internet** | First install downloads ~2 GB (speech models) |
+| **Disk space** | ~3 GB free |
 
-**Controls while running:**
-- **Visual buttons:** move the mouse on the [ai-visualizer](https://github.com/jaredrhod/ai-visualizer) face (bottom-right: Pause, Resume, Fast, Deep, Toggle) or open **`Open Control.command`** / http://127.0.0.1:8792/
-- **Voice:** say **`pause`** / **`resume`** (exact phrases)
-- **Hotkey:** **Fn+Option** toggles fast ↔ deep model (fallback: **Ctrl+Option+M**). Customize in `backtalk.json` → `hotkeys`.
+You do **not** need to install Python, Homebrew, or ai-visualizer yourself — the installer handles that.
 
-**Do not start from Cursor's terminal** on macOS — push-to-talk needs Terminal.app.
+### Step 1 — Get the repo
 
-Diagnostics: `./voice-test.sh`
+**Option A — Git (recommended)**
+
+```bash
+git clone https://github.com/vikrambalaaj/backtalk
+cd backtalk
+```
+
+**Option B — ZIP**
+
+1. Open https://github.com/vikrambalaaj/backtalk  
+2. Click **Code → Download ZIP**  
+3. Unzip it (e.g. to `~/Projects/backtalk`)  
+4. Open that folder in Finder  
+
+### Step 2 — One click
+
+**Double-click `Install Backtalk.command`**
+
+macOS may warn the first time (“unidentified developer”). Click **Open** (or right-click → Open).
+
+The installer runs in Terminal and:
+
+1. Installs **Homebrew** (if missing) and **espeak-ng**
+2. Creates the Python environment and downloads **speech models** (~2 GB, first time only)
+3. **Clones ai-visualizer** next to this folder (`../ai-visualizer`) and wires it to backtalk
+4. Creates **`backtalk.json`** from the example
+5. Puts **three shortcuts on your Desktop** (Voice, Face, Stack)
+6. Opens the **face in your browser** and starts the **voice line**
+
+First install takes **5–15 minutes** depending on your connection. Later launches start in seconds.
+
+### Step 3 — Grant permissions (one time)
+
+When macOS asks:
+
+| Permission | Why | If you skip it |
+|------------|-----|----------------|
+| **Microphone** → allow for **Terminal** | Voice input | Agent cannot hear you |
+| **Input Monitoring** → enable **Terminal** | Push-to-talk + Fn+Option model toggle | Falls back to hands-free listening |
+
+Input Monitoring: **System Settings → Privacy & Security → Input Monitoring → Terminal → ON**, then **quit and reopen Terminal**.
+
+### Step 4 — Talk
+
+After install finishes you should see:
+
+- A **Terminal** window (voice — hold your talk key, speak, release)
+- A **browser tab** with the animated face (idle / listening / thinking / speaking)
+
+Say **"goodbye assistant"** (or your agent name from `backtalk.json`) to hang up. Close Terminal when done — the **face keeps running** in the background until you quit the browser or reboot.
+
+### Every day after that
+
+Use the **Desktop shortcuts** (names match your agent in `backtalk.json`, default `Assistant`):
+
+| Shortcut | Use when |
+|----------|----------|
+| **`<name> Stack.command`** | **Recommended** — face + voice together |
+| **`<name> Voice.command`** | Voice only, no browser face |
+| **`<name> Face.command`** | Face only (already running voice elsewhere) |
+
+Or from the repo folder: `./start-stack.sh`
+
+**Do not start from Cursor's integrated terminal** — push-to-talk needs **Terminal.app**. If you try, it opens `Start Voice.command` for you.
+
+### Configure your agent (optional)
+
+Default `backtalk.json` works for a quick test. To point at your real agent:
+
+1. Open this folder in Claude Code  
+2. Say: *"read backtalk.md and set me up"*  
+
+Or edit `backtalk.json` yourself: set `agent_dir` to your agent folder and `name` to your agent's name.
+
+### Controls while running
+
+| Method | Action |
+|--------|--------|
+| **Face overlay** | Move the mouse on the visualizer — buttons bottom-right: Pause, Resume, Fast, Deep, Toggle |
+| **Control panel** | Double-click `Open Control.command` or http://127.0.0.1:8792/ |
+| **Voice** | Say **`pause`** or **`resume`** (exact phrases, spoken alone) |
+| **Hotkey** | **Fn+Option** toggles fast ↔ deep model (fallback: **Ctrl+Option+M**) |
+
+### If something goes wrong
+
+```bash
+./voice-test.sh          # mic, speaker, push-to-talk check
+./setup.sh --yes         # re-wire visualizer after moving the folder
+./make-desktop-launcher.sh   # refresh Desktop shortcuts
+```
+
+Logs: `logs/backtalk.log` (voice) and `~/.local/share/backtalk/logs/visualizer.log` (face).
+
+More: `TROUBLESHOOTING.md`
+
+### What gets installed where
+
+```
+~/Projects/                 (example location)
+  backtalk/                 ← this repo (voice)
+  ai-visualizer/            ← cloned automatically (face)
+```
+
+### This fork includes
+
+macOS one-click stack install, pause/resume, visual control panel, Fn+Option model toggle, Cursor→Terminal redirect, Input Monitoring detection with hands-free fallback, and detached face process (closing the voice window does not kill the visualizer).
+
+---
 
 ## One-click start (Windows)
 
-1. Clone the repo (same URL as above).
-2. Double-click **`Start Voice.bat`**.
-3. Grant mic permission when asked.
+Voice only on Windows (no bundled visualizer yet).
 
-This fork adds macOS one-click install, pause/resume, Cursor→Terminal redirect, Input Monitoring detection with hands-free fallback, and portable launcher scripts.
+1. `git clone https://github.com/vikrambalaaj/backtalk && cd backtalk`
+2. Double-click **`Start Voice.bat`**
+3. Grant microphone permission when asked
 
 ## Install (manual)
 
@@ -99,7 +194,7 @@ Two engines, and the setup wizard offers you both instead of quietly defaulting.
 
 backtalk writes tiny state files while it listens, thinks, and speaks, so anything can watch them and react in real time.
 
-- **[ai-visualizer](https://github.com/jaredrhod/ai-visualizer)** is the matching face: four full-screen visualizers, including the living circuit board from my videos. Point its `bus_dir` at this folder (or set `signals_dir` here to its folder) and it performs your actual conversation, idling, listening, thinking, and speaking along with the voice.
+- **[ai-visualizer](https://github.com/vikrambalaaj/ai-visualizer)** is the matching face: four full-screen visualizers, including the living circuit board from my videos. The macOS one-click installer clones and wires it automatically (`bus_dir` → this folder). Manual install: point its `bus_dir` at this folder (or set `signals_dir` here to its folder) and it performs your actual conversation, idling, listening, thinking, and speaking along with the voice.
 - **[barehands](https://github.com/jaredrhod/barehands)**: point `barehands_state_dir` at its `state/` folder and the on-screen ring becomes your agent's face, breathing while idle, spinning while thinking, and pulsing with the voice while it talks.
 
 Mind ([ai-memory-vault](https://github.com/jaredrhod/ai-memory-vault)), mouth (this), face (ai-visualizer), hands (barehands).
