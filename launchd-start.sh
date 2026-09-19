@@ -3,8 +3,10 @@
 # backtalk must NOT run headless: it inherits the terminal's Microphone and
 # Input Monitoring permissions (see TROUBLESHOOTING.md).
 set -euo pipefail
-LOG_DIR="/Users/balamurugan/Projects/.logs"
+REPO="$(cd "$(dirname "$0")" && pwd)"
+LOG_DIR="${BACKTALK_LOG_DIR:-$HOME/.local/share/backtalk/logs}"
 mkdir -p "$LOG_DIR"
+LAUNCHER="$REPO/Start Voice.command"
 # If a Cursor-hosted copy is running, it has no talk key — replace it.
 if pgrep -f 'backtalk[.]main' >/dev/null 2>&1; then
   host_ok=false
@@ -26,5 +28,5 @@ if pgrep -f 'backtalk[.]main' >/dev/null 2>&1; then
   pkill -f 'backtalk[.]main' 2>/dev/null || true
   sleep 2
 fi
-/usr/bin/open -a Terminal "/Users/balamurugan/Projects/backtalk/Jarvis Voice.command"
-echo "$(date -Iseconds) opened Jarvis Voice in Terminal" >> "$LOG_DIR/backtalk-launchd.log"
+/usr/bin/open -a Terminal "$LAUNCHER"
+echo "$(date -Iseconds) opened Start Voice in Terminal" >> "$LOG_DIR/backtalk-launchd.log"

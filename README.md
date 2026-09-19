@@ -20,10 +20,31 @@ The hearing and the voice run local: free, offline models on your machine, no vo
 - **Music ducks while it speaks** (Spotify, macOS) and comes back up after.
 - **It thinks out loud.** While the agent works, you hear the processing sound from my videos, so a pause never reads as a dead line. Silence it with `"thinking_sound": ""` in the config.
 
-## Install
+## One-click start (macOS / Windows)
+
+**Prerequisites:** [Claude Code](https://claude.com/claude-code) installed and signed in. On macOS, [Homebrew](https://brew.sh) is used for `espeak-ng` on first install.
+
+1. Download or clone this repo:
+   ```
+   git clone https://github.com/vikrambalaaj/backtalk
+   cd backtalk
+   ```
+2. **macOS:** double-click **`Start Voice.command`**. First run installs everything (~2 GB once), creates `backtalk.json`, then starts the voice line in Terminal.app.
+3. **Windows:** double-click **`Start Voice.bat`** (same idea; uses `setup.bat`).
+4. Grant **Microphone** when asked. For push-to-talk on macOS, also enable **Input Monitoring** for Terminal (System Settings → Privacy & Security → Input Monitoring), then restart Terminal.
+
+Optional: run `./make-desktop-launcher.sh` to put a shortcut on your Desktop named after your agent.
+
+**Do not start from Cursor's terminal** on macOS — push-to-talk needs Terminal.app. If you try, `run.sh` opens `Start Voice.command` for you.
+
+Diagnostics: `./voice-test.sh` checks audio, mic, and push-to-talk.
+
+This fork includes macOS reliability fixes: Cursor→Terminal redirect, Input Monitoring detection with hands-free fallback, and portable launcher scripts.
+
+## Install (manual)
 
 ```
-git clone https://github.com/jaredrhod/backtalk
+git clone https://github.com/vikrambalaaj/backtalk
 cd backtalk
 ./install.sh
 ```

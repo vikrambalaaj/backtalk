@@ -22,18 +22,32 @@ set -e
 cd "$(dirname "$0")"
 export PATH="$HOME/.local/bin:/opt/homebrew/bin:/usr/local/bin:$PATH"
 
+YES=0
+for arg in "$@"; do
+  case "$arg" in
+    --yes|-y) YES=1 ;;
+  esac
+done
+[ "${BACKTALK_YES:-}" = "1" ] && YES=1
+
 echo "== backtalk install =="
 
 # --- uv (the Python environment manager) ---
 if ! command -v uv >/dev/null 2>&1; then
   echo "-- uv not found. It's the fast Python manager this uses."
-  read -r -p "   Install it now? [Y/n] " a
-  if [ "$a" = "n" ] || [ "$a" = "N" ]; then
-    echo "   Install uv yourself (https://docs.astral.sh/uv/) and re-run."
-    exit 1
+  if [ "$YES" = 1 ]; then
+    echo "   Installing uv automatically (--yes)."
+    curl -LsSf https://astral.sh/uv/install.sh | sh
+    export PATH="$HOME/.local/bin:$PATH"
+  else
+    read -r -p "   Install it now? [Y/n] " a
+    if [ "$a" = "n" ] || [ "$a" = "N" ]; then
+      echo "   Install uv yourself (https://docs.astral.sh/uv/) and re-run."
+      exit 1
+    fi
+    curl -LsSf https://astral.sh/uv/install.sh | sh
+    export PATH="$HOME/.local/bin:$PATH"
   fi
-  curl -LsSf https://astral.sh/uv/install.sh | sh
-  export PATH="$HOME/.local/bin:$PATH"
 fi
 
 # --- espeak-ng (the one system library: the voice engine phonemizes

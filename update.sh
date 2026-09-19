@@ -14,7 +14,7 @@ main() {
     # this folder arrived as a zip: wire it to updates, once, keeping the config
     [ -f "$CFG" ] && cp "$CFG" "$CFG.mine"
     git init -q -b main
-    git remote add origin https://github.com/jaredrhod/backtalk
+    git remote add origin https://github.com/vikrambalaaj/backtalk
     git fetch -q origin
     git reset -q --hard origin/main
     git branch -q --set-upstream-to=origin/main main

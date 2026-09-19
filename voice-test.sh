@@ -43,13 +43,13 @@ tap = _cgevent_tap_ok()
 print(f'host={host!r}  input_monitoring={ok}  cgevent_tap={tap}')
 if not ok:
     if host == 'Cursor':
-        print('PTT: BLOCKED in Cursor — double-click Jarvis Voice.command (Terminal.app).')
+        print('PTT: BLOCKED in Cursor — double-click Start Voice.command (Terminal.app).')
     else:
         print('PTT: BLOCKED — enable Input Monitoring for', host, 'in System Settings → Privacy & Security → Input Monitoring, then restart the terminal.')
         print('Fallback: backtalk auto-switches to hands-free on launch when PTT is blocked.')
     raise SystemExit(1)
-print('PTT: OK (hold F5 in the Jarvis Voice window to talk)')
+print('PTT: OK (hold your talk key in the voice window)')
 "
 echo
 echo "=== All checks passed ==="
-echo "Start Jarvis: double-click 'Jarvis Voice.command' (NOT from Cursor terminal)."
+echo "Start voice: double-click 'Start Voice.command' (NOT from Cursor terminal)."
