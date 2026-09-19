@@ -1,5 +1,5 @@
 #!/bin/bash
-# Desktop shortcuts: voice, face, and optional full stack.
+# Desktop shortcuts: voice, face, and full stack.
 set -euo pipefail
 cd "$(dirname "$0")"
 export PATH="$HOME/.local/bin:/opt/homebrew/bin:/usr/local/bin:$PATH"
@@ -34,11 +34,8 @@ write_launcher "$HOME/Desktop/${NAME} Voice.command" "cd \"$REPO\"
 exec ./run.sh"
 
 if [ -n "$VIS" ] && [ -x "$VIS/run.sh" ]; then
-  write_launcher "$HOME/Desktop/${NAME} Face.command" "cd \"$VIS\"
-exec ./run.sh"
-  write_launcher "$HOME/Desktop/${NAME} Stack.command" "cd \"$VIS\"
-./run.sh &
-sleep 2
-cd \"$REPO\"
-exec ./run.sh"
+  write_launcher "$HOME/Desktop/${NAME} Face.command" "cd \"$REPO\"
+exec ./start-visualizer.sh"
+  write_launcher "$HOME/Desktop/${NAME} Stack.command" "cd \"$REPO\"
+exec ./start-stack.sh"
 fi

@@ -736,9 +736,10 @@ async def amain():
     brain.session.update(turns=0, out_tokens=0, in_tokens=0, cost=0.0)
     cmd_q: queue.Queue[str] = queue.Queue()
     if CFG.get("control_panel", True):
-        start_control_panel(cmd_q, int(CFG.get("control_port", 8792)))
-        log(f"[backtalk] control panel http://127.0.0.1:"
-            f"{int(CFG.get('control_port', 8792))}/")
+        cport = int(CFG.get("control_port", 8792))
+        signals.set_control_url(cport)
+        start_control_panel(cmd_q, cport)
+        log(f"[backtalk] control panel http://127.0.0.1:{cport}/")
     hk = CFG.get("hotkeys") or {}
     if hk.get("toggle_model") or hk.get("pause") or hk.get("resume"):
         HotkeyService(cmd_q, hk).start()

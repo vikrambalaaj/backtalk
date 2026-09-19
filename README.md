@@ -38,9 +38,11 @@ The hearing and the voice run local: free, offline models on your machine, no vo
 3. Grant **Microphone** when asked. For push-to-talk, enable **Input Monitoring** for Terminal (System Settings → Privacy & Security), then restart Terminal.
 
 After the first install, use the **Desktop shortcuts**:
-- **`<name> Stack.command`** — face in the browser + voice (recommended)
+- **`<name> Stack.command`** — face in the browser + voice (recommended; face runs detached)
 - **`<name> Voice.command`** — voice only
 - **`<name> Face.command`** — visualizer only
+
+Re-running setup re-wires the visualizer if you move folders (`./setup.sh --yes`).
 
 **Controls while running:**
 - **Visual buttons:** move the mouse on the [ai-visualizer](https://github.com/jaredrhod/ai-visualizer) face (bottom-right: Pause, Resume, Fast, Deep, Toggle) or open **`Open Control.command`** / http://127.0.0.1:8792/

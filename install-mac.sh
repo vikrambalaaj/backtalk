@@ -37,7 +37,6 @@ ensure_brew
 if [ -f backtalk.json ]; then
   NAME="$(.venv/bin/python -c "import json; print(json.load(open('backtalk.json')).get('name','Voice'))" 2>/dev/null || echo Voice)"
 fi
-./install-visualizer.sh
 ./make-desktop-launcher.sh
 touch .backtalk-ready
 
@@ -52,4 +51,6 @@ echo "One-time macOS permissions:"
 echo "  • Microphone — allow when Terminal asks"
 echo "  • Input Monitoring for Terminal — System Settings → Privacy & Security"
 echo "    (needed for push-to-talk; without it, hands-free still works)"
+echo ""
+echo "Start with: ${NAME} Stack.command (face + voice)"
 echo ""

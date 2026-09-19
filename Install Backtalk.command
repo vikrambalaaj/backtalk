@@ -1,5 +1,5 @@
 #!/bin/bash
-# ONE-CLICK macOS install: deps, models, Desktop shortcut, then start voice.
+# ONE-CLICK macOS install: deps, models, visualizer, Desktop shortcuts, then stack.
 export PATH="$HOME/.local/bin:/opt/homebrew/bin:/usr/local/bin:$PATH"
 cd "$(dirname "$0")"
 if [ ! -f .backtalk-ready ]; then
@@ -7,4 +7,4 @@ if [ ! -f .backtalk-ready ]; then
 else
   ./setup.sh --yes --quick 2>/dev/null || ./setup.sh --yes
 fi
-exec ./run.sh
+exec ./start-stack.sh

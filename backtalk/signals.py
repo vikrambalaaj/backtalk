@@ -22,6 +22,7 @@ is the whole integration surface:
 
   .voice_state        idle | listening | thinking | speaking | paused
   .voice_model        fast | deep   (which brain tier is active)
+  .voice_control_url  http://127.0.0.1:PORT/ for face overlay buttons
   .voice_waveform     JSON {ts, samples: [64 floats]} while audio plays
   .voice_loading_pid  exists while the thinking sound is playing
   .voice_rate_limits  JSON {window: {utilization, resets_at}} — only
@@ -50,6 +51,7 @@ from backtalk.config import CFG
 _DIR = CFG["signals_dir"]
 _STATE_FILE = os.path.join(_DIR, ".voice_state")
 _MODEL_FILE = os.path.join(_DIR, ".voice_model")
+_CONTROL_URL_FILE = os.path.join(_DIR, ".voice_control_url")
 _WAVEFORM_FILE = os.path.join(_DIR, ".voice_waveform")
 _LOADING_PID_FILE = os.path.join(_DIR, ".voice_loading_pid")
 _DIRECTION_FILE = os.path.join(_DIR, ".voice_direction")
@@ -106,6 +108,25 @@ def read_model_tier() -> str:
         return "deep" if t == "deep" else "fast"
     except OSError:
         return "fast"
+
+
+def set_control_url(port: int):
+    """Publish control-panel URL for ai-visualizer overlay buttons."""
+    url = f"http://127.0.0.1:{int(port)}/"
+    try:
+        with open(_CONTROL_URL_FILE, "w") as f:
+            f.write(url)
+    except OSError:
+        pass
+
+
+def read_control_url() -> str:
+    try:
+        with open(_CONTROL_URL_FILE) as f:
+            u = f.read().strip()
+            return u if u else "http://127.0.0.1:8792/"
+    except OSError:
+        return "http://127.0.0.1:8792/"
 
 
 def feed_waveform(pcm: np.ndarray):
