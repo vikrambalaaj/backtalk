@@ -20,26 +20,37 @@ The hearing and the voice run local: free, offline models on your machine, no vo
 - **Music ducks while it speaks** (Spotify, macOS) and comes back up after.
 - **It thinks out loud.** While the agent works, you hear the processing sound from my videos, so a pause never reads as a dead line. Silence it with `"thinking_sound": ""` in the config.
 
-## One-click start (macOS / Windows)
+## One-click install (macOS)
 
-**Prerequisites:** [Claude Code](https://claude.com/claude-code) installed and signed in. On macOS, [Homebrew](https://brew.sh) is used for `espeak-ng` on first install.
+**Prerequisites:** [Claude Code](https://claude.com/claude-code) installed and signed in.
 
 1. Download or clone this repo:
    ```
    git clone https://github.com/vikrambalaaj/backtalk
    cd backtalk
    ```
-2. **macOS:** double-click **`Start Voice.command`**. First run installs everything (~2 GB once), creates `backtalk.json`, then starts the voice line in Terminal.app.
-3. **Windows:** double-click **`Start Voice.bat`** (same idea; uses `setup.bat`).
-4. Grant **Microphone** when asked. For push-to-talk on macOS, also enable **Input Monitoring** for Terminal (System Settings → Privacy & Security → Input Monitoring), then restart Terminal.
+2. **Double-click `Install Backtalk.command`** — that's it. First run:
+   - Installs Homebrew (if needed) and `espeak-ng`
+   - Creates the Python environment and downloads speech models (~2 GB once)
+   - Creates `backtalk.json` and a **Desktop shortcut**
+   - Starts the voice line in Terminal.app
+3. Grant **Microphone** when asked. For push-to-talk, enable **Input Monitoring** for Terminal (System Settings → Privacy & Security), then restart Terminal.
 
-Optional: run `./make-desktop-launcher.sh` to put a shortcut on your Desktop named after your agent.
+After the first install, use the **Desktop shortcut** or **`Start Voice.command`** for daily use.
 
-**Do not start from Cursor's terminal** on macOS — push-to-talk needs Terminal.app. If you try, `run.sh` opens `Start Voice.command` for you.
+**Voice console:** say **`pause`** to stand by without hanging up; say **`resume`** to listen again (hold the talk key and say it, or type it in the terminal).
 
-Diagnostics: `./voice-test.sh` checks audio, mic, and push-to-talk.
+**Do not start from Cursor's terminal** on macOS — push-to-talk needs Terminal.app.
 
-This fork includes macOS reliability fixes: Cursor→Terminal redirect, Input Monitoring detection with hands-free fallback, and portable launcher scripts.
+Diagnostics: `./voice-test.sh`
+
+## One-click start (Windows)
+
+1. Clone the repo (same URL as above).
+2. Double-click **`Start Voice.bat`**.
+3. Grant mic permission when asked.
+
+This fork adds macOS one-click install, pause/resume, Cursor→Terminal redirect, Input Monitoring detection with hands-free fallback, and portable launcher scripts.
 
 ## Install (manual)
 

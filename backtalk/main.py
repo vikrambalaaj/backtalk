@@ -29,7 +29,8 @@ THE VOICE CONSOLE: exact phrases, spoken (or typed) alone, control the
 session itself so you never go back to the keyboard: "clear the
 session" / "compact the session" / "switch to the deep model" / "back
 to the fast model" / "set effort to low" (or medium, high, max) /
-"usage report" / "go hands free" and "push to talk mode" (the MIC) /
+"usage report" / "pause" and "resume" (stand by without hanging up) /
+"go hands free" and "push to talk mode" (the MIC) /
 "stop asking for permission" and "start asking again" (permissions,
 called auto-approve, a different axis than the microphone on purpose).
 And with permission_mode "ask" (the default), gated tool calls ASK OUT
@@ -104,6 +105,8 @@ _AUTOAPPROVE = {"on": False}
 # open-mic capture from before the switch gets discarded, never
 # processed.
 _MIC = {"mode": "ptt", "gen": 0, "btn": False}
+# Stand-by without hanging up: no open mic, no turns, PTT only for "resume".
+_PAUSED = {"on": False}
 
 # Approvals are EXACT matches after normalization, never prefixes:
 # "yesterday", "yes or no", and "yes, but do not overwrite" must all
@@ -308,6 +311,9 @@ CONSOLE_VERBS = {
     "fast":      ("switch to the fast model", "use the fast model",
                   "back to the fast model", "slash model fast"),
     "usage":     ("usage report", "slash usage"),
+    "pause":     ("pause", "pause listening", "stand by", "hold on"),
+    "resume":    ("resume", "resume listening", "i'm back",
+                  "continue listening", "unpause"),
     "micopen":   ("go hands free", "hands free mode",
                   "hands free listening", "open mic", "open the mic"),
     "micptt":    ("push to talk", "push to talk mode",
@@ -781,6 +787,29 @@ async def amain():
             resp = ""
             mouth.say(_spoken_usage(brain.session,
                                     await brain.context_usage()))
+        elif verb == "pause":
+            resp = ""
+            if _PAUSED["on"]:
+                mouth.say("Already paused.")
+            else:
+                _PAUSED["on"] = True
+                _MIC["gen"] += 1
+                mouth.shut_up()
+                signals.static_stop()
+                signals.set_state("paused")
+                log("[console] paused — say resume to listen again")
+                mouth.say("Paused. Say resume when you want me "
+                          "listening again.")
+        elif verb == "resume":
+            resp = ""
+            if not _PAUSED["on"]:
+                mouth.say("I'm already listening.")
+            else:
+                _PAUSED["on"] = False
+                _MIC["gen"] += 1
+                signals.set_state("idle")
+                log("[console] resumed listening")
+                mouth.say("Back on. I'm listening.")
         elif verb == "micopen":
             resp = ""
             if _MIC["mode"] == "open":
@@ -875,6 +904,16 @@ async def amain():
         told apart from speech that began before the ask even existed."""
         nonlocal speak_task
         log(f"[you]    {text}")
+        if _PAUSED["on"]:
+            v = console_match(text)
+            if v == "resume":
+                await run_console("resume")
+                return True
+            if v == "pause":
+                mouth.say("Already paused.")
+                return True
+            log(f"[pause] ignored while paused: {text[:80]}")
+            return True
         # A pending spoken permission ask owns the next utterance IF
         # that utterance started after the ask was posed. Speech that
         # began earlier is the user interrupting the turn, not
@@ -988,7 +1027,9 @@ async def amain():
             if press_fut is None:
                 press_fut = loop.run_in_executor(None, ptt.wait_press)
             waiters = {press_fut, typed_fut}
-            if _MIC["mode"] == "open":
+            if _PAUSED["on"]:
+                signals.set_state("paused")
+            if _MIC["mode"] == "open" and not _PAUSED["on"]:
                 if mic_fut is None:
                     g = _MIC["gen"]
                     mic_fut = loop.run_in_executor(
