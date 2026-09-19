@@ -15,7 +15,7 @@ The hearing and the voice run local: free, offline models on your machine, no vo
 - **Interrupt it.** Press the key while it's talking and it shuts up and listens. No headphones needed, because the mic only opens while you hold the key, so it never hears the speakers.
 - **Type instead whenever you want.** Typing in the terminal is the same conversation, and the reply is still spoken.
 - **It asks before it acts, in plain words.** When your agent wants to do something real, it asks out loud the way a person would ("I want to change a note in your vault called Recipes") and waits. An exact spoken yes approves; "details" reads you the exact command; anything else denies, with your words passed back as the reason, so "no, put that in drafts instead" actually steers it. Most read-only work passes without interrupting. Prefer auto-approve? Say "stop asking for permission" (or "turn off the permission prompts") and confirm; it changes its own config, and the first ask of every session reminds you the phrase exists.
-- **The voice console.** Session control by voice, so you never go back to the keyboard: "clear the session", "compact the session", "switch to the deep model" / "back to the fast model", "set effort to low" (or medium, high, max; this one saves itself as your default), "usage report", "go hands free" / "push to talk mode" for the microphone, "stop asking for permission" / "start asking again" for approvals. Exact phrases, spoken alone. (Credit where due: this grew out of a community member's own build shared in the Discord.)
+- **The voice console.** Session control by voice, so you never go back to the keyboard: "clear the session", "compact the session", "switch to haiku" / "switch to sonnet" / "switch to the deep model", "set effort to low" (or medium, high, max; this one saves itself as your default), "usage report", "go hands free" / "push to talk mode" for the microphone, "stop asking for permission" / "start asking again" for approvals. Exact phrases, spoken alone. Default brain is Haiku; change defaults in `backtalk.json`. (Credit where due: this grew out of a community member's own build shared in the Discord.)
 - **It can pick up where it left off.** Set `"resume_last_session": true` in the config and every launch reattaches to your previous conversation instead of starting cold, so closing the window stops costing you the thread. Off by default. And the built-in voice has a pace dial: `"speed"` in the config, 1.0 native, 1.15 brisker. (Credit where due: both grew out of a community proposal by aram-cloudstak.)
 - **Music ducks while it speaks** (Spotify, macOS) and comes back up after.
 - **It thinks out loud.** While the agent works, you hear the processing sound from my videos, so a pause never reads as a dead line. Silence it with `"thinking_sound": ""` in the config.
@@ -113,14 +113,25 @@ Default `backtalk.json` works for a quick test. To point at your real agent:
 
 Or edit `backtalk.json` yourself: set `agent_dir` to your agent folder and `name` to your agent's name.
 
+**Default brain is Haiku** (fast, low latency). Change defaults anytime:
+
+```json
+"model": "claude-haiku-4-5",
+"balanced_model": "claude-sonnet-5",
+"deep_model": "claude-opus-5"
+```
+
+Voice switches apply for the **current session**; edit those keys (or ask your agent) to change what launches next time.
+
 ### Controls while running
 
 | Method | Action |
 |--------|--------|
-| **Face overlay** | Move the mouse on the visualizer — buttons bottom-right: Pause, Resume, Fast, Deep, Toggle |
+| **Face overlay** | Move the mouse on the visualizer — buttons bottom-right: Pause, Resume, Haiku, Sonnet, Opus, Cycle |
 | **Control panel** | Double-click `Open Control.command` or http://127.0.0.1:8792/ |
 | **Voice** | Say **`pause`** or **`resume`** (exact phrases, spoken alone) |
-| **Hotkey** | **Fn+Option** toggles fast ↔ deep model (fallback: **Ctrl+Option+M**) |
+| **Hotkey** | **Fn+Option** cycles **Haiku → Sonnet → Opus** (fallback: **Ctrl+Option+M**) |
+| **Voice models** | **`switch to haiku`** / **`switch to sonnet`** / **`switch to the deep model`** (exact phrases) |
 
 ### If something goes wrong
 

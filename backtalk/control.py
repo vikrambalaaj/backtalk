@@ -37,12 +37,13 @@ _CONTROL_HTML = """<!DOCTYPE html>
   <div class="row">
     <button class="primary" data-cmd="pause">PAUSE</button>
     <button class="primary" data-cmd="resume">RESUME</button>
-    <button data-cmd="fast">FAST MODEL</button>
-    <button data-cmd="deep">DEEP MODEL</button>
-    <button data-cmd="toggle_model">TOGGLE MODEL</button>
+    <button data-cmd="haiku">HAIKU</button>
+    <button data-cmd="sonnet">SONNET</button>
+    <button data-cmd="deep">OPUS</button>
+    <button data-cmd="toggle_model">CYCLE</button>
   </div>
-  <div id="hint">Hotkey: Fn+Option toggles model (also Ctrl+Option+M).<br>
-  ai-visualizer faces show the same buttons on mouse move (bottom right).</div>
+  <div id="hint">Default brain: Haiku (fast). Fn+Option cycles Haiku → Sonnet → Opus.<br>
+  Change defaults in backtalk.json: model, balanced_model, deep_model.</div>
 </div>
 <script>
 async function status() {

@@ -47,12 +47,14 @@ DEFAULTS = {
     # can silently land on an older model. The fast tier is most of the
     # speed difference people ask about; a deep-work model makes every
     # reply noticeably slower and burns usage doing it.
-    "model": "claude-sonnet-5",
-    # The deep-work model for the voice console's "switch to the deep
-    # model" command ("back to the fast model" returns to "model"
-    # above). Full id ON PURPOSE, same reasoning as "model". The switch
-    # lasts one session and is always spoken; this default never moves
-    # by itself.
+    # Default voice brain — Haiku is fastest/cheapest for talk-first use.
+    # Full model id ON PURPOSE — never a bare alias like "haiku": the SDK
+    # can silently resolve aliases to an older model through its CLI.
+    "model": "claude-haiku-4-5",
+    # Balanced tier for "switch to sonnet" (voice console / control panel).
+    "balanced_model": "claude-sonnet-5",
+    # Deep tier for "switch to the deep model". Session-only switch;
+    # change defaults in this file or ask your agent to update it.
     "deep_model": "claude-opus-5",
     # Tool permissions for the voice session. "ask" is the default ON
     # PURPOSE (safety is opt-out, never opt-in): when the agent wants a
@@ -244,9 +246,11 @@ DISCIPLINE = (
     "by exact spoken phrases, never by you. Permissions: 'stop "
     "asking for permission' (then 'confirm'), or 'start asking "
     "again'. Microphone: 'go hands free', or 'push to talk mode'. "
-    "Stand by: 'pause' or 'resume'. Also: 'clear the session', "
-    "'compact the session', 'switch to the deep model', 'back to "
-    "the fast model', 'set effort to low' (or medium, high, max), "
+    "Stand by: 'pause' or 'resume'. Models: 'switch to haiku', "
+    "'switch to sonnet', 'switch to the deep model', or 'back to "
+    "the fast model' (your configured default, usually haiku). Also: "
+    "'clear the session', 'compact the session', 'set effort to low' "
+    "(or medium, high, max), "
     "and 'usage report'. You cannot flip "
     "these live yourself, so when asked, give the person the exact "
     "phrase to SAY. Editing backtalk.json only changes the default "
@@ -280,6 +284,32 @@ def load() -> dict:
     if thinking and not os.path.isabs(thinking):
         thinking = str(REPO / thinking)
     cfg["thinking_sound"] = thinking
+    return cfg
+
+
+# Voice-console model tiers -> backtalk.json keys.
+MODEL_TIER_KEYS = {
+    "haiku": "model",
+    "sonnet": "balanced_model",
+    "deep": "deep_model",
+}
+
+
+def model_id_for_tier(tier: str, cfg: dict | None = None) -> str:
+    """Resolve a spoken tier name to a full Claude model id."""
+    c = cfg or CFG
+    key = MODEL_TIER_KEYS.get(tier, "model")
+    return c.get(key) or c["model"]
+
+
+def tier_for_model_id(model_id: str, cfg: dict | None = None) -> str:
+    """Best-effort tier label for the signal bus / control panel."""
+    c = cfg or CFG
+    mid = (model_id or "").strip()
+    for tier, key in MODEL_TIER_KEYS.items():
+        if mid == c.get(key):
+            return tier
+    return "haiku"
     name = str(cfg.get("name") or "Assistant")
     low = name.lower()
     cfg["quit_phrases"] = tuple(cfg.get("quit_phrases") or (

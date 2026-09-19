@@ -93,8 +93,12 @@ def read_state() -> str:
 
 
 def set_model_tier(tier: str):
-    """Publish fast/deep for faces and the control panel."""
-    tier = "deep" if str(tier).lower().startswith("deep") else "fast"
+    """Publish haiku/sonnet/deep for faces and the control panel."""
+    tier = str(tier).lower().strip()
+    if tier == "fast":
+        tier = "haiku"
+    if tier not in ("haiku", "sonnet", "deep"):
+        tier = "haiku"
     try:
         with open(_MODEL_FILE, "w") as f:
             f.write(tier)
@@ -105,9 +109,11 @@ def set_model_tier(tier: str):
 def read_model_tier() -> str:
     try:
         t = open(_MODEL_FILE).read().strip().lower()
-        return "deep" if t == "deep" else "fast"
+        if t in ("haiku", "sonnet", "deep"):
+            return t
+        return "haiku" if t == "fast" else "haiku"
     except OSError:
-        return "fast"
+        return "haiku"
 
 
 def set_control_url(port: int):

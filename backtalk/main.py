@@ -30,7 +30,8 @@ session itself so you never go back to the keyboard: "clear the
 session" / "compact the session" / "switch to the deep model" / "back
 to the fast model" / "set effort to low" (or medium, high, max) /
 "usage report" / "pause" and "resume" (stand by without hanging up) /
-"switch to the deep model" / "back to the fast model" (or Fn+Option) /
+"switch to haiku" / "switch to sonnet" / "switch to the deep model"
+(or Fn+Option cycles tiers) /
 "go hands free" and "push to talk mode" (the MIC) /
 "stop asking for permission" and "start asking again" (permissions,
 called auto-approve, a different axis than the microphone on purpose).
@@ -65,7 +66,7 @@ import time
 
 from backtalk import signals
 from backtalk.brain import WarmBrain
-from backtalk.config import CFG
+from backtalk.config import CFG, model_id_for_tier, tier_for_model_id
 from backtalk.ears import (Ears, explain_audio_failure, record_held,
                            warm as warm_ears)
 from backtalk.mouth import Mouth
@@ -110,8 +111,9 @@ _AUTOAPPROVE = {"on": False}
 _MIC = {"mode": "ptt", "gen": 0, "btn": False}
 # Stand-by without hanging up: no open mic, no turns, PTT only for "resume".
 _PAUSED = {"on": False}
-# Tracks whether the deep-work model is active (for toggle + visual bus).
-_MODEL_DEEP = {"on": False}
+# Active Claude tier for this session (haiku | sonnet | deep).
+_MODEL_TIER = {"current": "haiku"}
+_MODEL_CYCLE = ("haiku", "sonnet", "deep")
 
 # Approvals are EXACT matches after normalization, never prefixes:
 # "yesterday", "yes or no", and "yes, but do not overwrite" must all
@@ -311,10 +313,14 @@ CONSOLE_VERBS = {
                   "clear context", "fresh slate", "slash clear"),
     "compact":   ("compact the session", "compact the context",
                   "compact context", "slash compact"),
+    "haiku":     ("switch to haiku", "use haiku", "haiku model",
+                  "slash model haiku", "back to the fast model",
+                  "use the fast model", "back to the default model",
+                  "slash model fast"),
+    "sonnet":    ("switch to sonnet", "use sonnet", "sonnet model",
+                  "slash model sonnet"),
     "deep":      ("switch to the deep model", "use the deep model",
-                  "slash model deep"),
-    "fast":      ("switch to the fast model", "use the fast model",
-                  "back to the fast model", "slash model fast"),
+                  "use opus", "slash model deep", "slash model opus"),
     "usage":     ("usage report", "slash usage"),
     "pause":     ("pause", "pause listening", "stand by", "hold on"),
     "resume":    ("resume", "resume listening", "i'm back",
@@ -731,7 +737,8 @@ async def amain():
         mouth.wait_done(timeout=30)
         raise SystemExit(1)
     log("[backtalk] brain warm")
-    signals.set_model_tier("fast")
+    _MODEL_TIER["current"] = tier_for_model_id(brain.model)
+    signals.set_model_tier(_MODEL_TIER["current"])
     # the hidden warmup ping is plumbing, not conversation
     brain.session.update(turns=0, out_tokens=0, in_tokens=0, cost=0.0)
     cmd_q: queue.Queue[str] = queue.Queue()
@@ -784,17 +791,49 @@ async def amain():
                 pass
             speak_task = None
 
+    async def _switch_model_tier(tier: str):
+        """Apply a voice-console model tier for this session."""
+        model_id = model_id_for_tier(tier)
+        if tier == "deep":
+            mouth.say("Switching to the deep model. Heads up, replies "
+                      "get slower. Say switch to haiku when you're done.")
+        elif tier == "sonnet":
+            mouth.say("Switching to Sonnet. A bit slower than Haiku, "
+                      "smarter on hard questions.")
+        else:
+            mouth.say("Back on Haiku, your fast default.")
+        resp = await brain.command(f"/model {model_id}")
+        _MODEL_TIER["current"] = tier
+        signals.set_model_tier(tier)
+        low = (resp or "").lower()
+        if resp and ("error" in low or "invalid" in low):
+            mouth.say(resp[:160])
+            log(f"[console] model {tier} answered: {resp[:120]}")
+        else:
+            labels = {"haiku": "Haiku", "sonnet": "Sonnet", "deep": "deep model"}
+            mouth.say(f"{labels.get(tier, tier)} online for this session. "
+                      "Change your default anytime in backtalk dot json.")
+
     async def run_remote(cmd: str):
         """Control panel / hotkey commands."""
         cmd = (cmd or "").strip().lower()
         if cmd == "toggle_model":
-            cmd = "deep" if not _MODEL_DEEP["on"] else "fast"
-        if cmd not in ("pause", "resume", "deep", "fast"):
+            try:
+                i = _MODEL_CYCLE.index(_MODEL_TIER["current"])
+            except ValueError:
+                i = 0
+            cmd = _MODEL_CYCLE[(i + 1) % len(_MODEL_CYCLE)]
+        if cmd == "fast":
+            cmd = "haiku"
+        if cmd not in ("pause", "resume", "haiku", "sonnet", "deep"):
             return
         log(f"[control] {cmd}")
         await _cancel_speak_task()
         await brain.reset_turn()
-        await run_console(cmd)
+        if cmd in ("haiku", "sonnet", "deep"):
+            await _switch_model_tier(cmd)
+        else:
+            await run_console(cmd)
 
     async def _run_console_inner(verb):
         _deny_pending()
@@ -807,19 +846,10 @@ async def amain():
             mouth.say("Compacting. One moment.")
             resp = await brain.command("/compact")
             say_after = "Compacted. Same conversation, smaller footprint."
-        elif verb == "deep":
-            mouth.say("Switching to the deep model. Heads up, replies "
-                      "get slower. Say back to the fast model when "
-                      "you're done.")
-            resp = await brain.command(f"/model {CFG['deep_model']}")
-            _MODEL_DEEP["on"] = True
-            signals.set_model_tier("deep")
-            say_after = "Deep model online, for this session only."
-        elif verb == "fast":
-            resp = await brain.command(f"/model {CFG['model']}")
-            _MODEL_DEEP["on"] = False
-            signals.set_model_tier("fast")
-            say_after = "Back on the fast model."
+        elif verb in ("haiku", "sonnet", "deep"):
+            await _switch_model_tier(verb)
+            resp = ""
+            say_after = None
         elif verb.startswith("effort:"):
             lvl = verb.split(":", 1)[1]
             resp = await brain.command(f"/effort {lvl}")
