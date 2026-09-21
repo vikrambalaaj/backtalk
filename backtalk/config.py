@@ -284,7 +284,19 @@ def load() -> dict:
     thinking = _expand(cfg.get("thinking_sound", ""))
     if thinking and not os.path.isabs(thinking):
         thinking = str(REPO / thinking)
-    cfg["thinking_sound"] = thinking
+    name = str(cfg.get("name") or "Assistant")
+    low = name.lower()
+    cfg["quit_phrases"] = tuple(cfg.get("quit_phrases") or (
+        f"goodbye {low}", f"good bye {low}", "end voice mode",
+        f"hang up {low}", "hang up"))
+    key_label = "the " + str(cfg.get("ptt_key", "home")).replace("_", " ") \
+                + " key"
+    # In hands-free there is no key to hold, so a separate line can be set.
+    if str(cfg.get("mic_mode", "ptt")) == "open" and cfg.get("greeting_open_mic"):
+        cfg["greeting"] = cfg["greeting_open_mic"]
+    cfg["greeting"] = str(cfg["greeting"]).replace(
+        "{name}", name).replace("{ptt_key}", key_label)
+    cfg["signoff"] = str(cfg["signoff"]).replace("{name}", name)
     return cfg
 
 
@@ -311,20 +323,6 @@ def tier_for_model_id(model_id: str, cfg: dict | None = None) -> str:
         if mid == c.get(key):
             return tier
     return "haiku"
-    name = str(cfg.get("name") or "Assistant")
-    low = name.lower()
-    cfg["quit_phrases"] = tuple(cfg.get("quit_phrases") or (
-        f"goodbye {low}", f"good bye {low}", "end voice mode",
-        f"hang up {low}", "hang up"))
-    key_label = "the " + str(cfg.get("ptt_key", "home")).replace("_", " ") \
-                + " key"
-    # In hands-free there is no key to hold, so a separate line can be set.
-    if str(cfg.get("mic_mode", "ptt")) == "open" and cfg.get("greeting_open_mic"):
-        cfg["greeting"] = cfg["greeting_open_mic"]
-    cfg["greeting"] = str(cfg["greeting"]).replace(
-        "{name}", name).replace("{ptt_key}", key_label)
-    cfg["signoff"] = str(cfg["signoff"]).replace("{name}", name)
-    return cfg
 
 
 CFG = load()
