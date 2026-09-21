@@ -313,9 +313,11 @@ class WarmBrain:
         self._dirty = True             # in flight until its ResultMessage
         await self._client.query(utterance)
         buf = ""
+        seen_stream = False
         async for msg in self._client.receive_response():
             t = type(msg).__name__
             if t == "StreamEvent":
+                seen_stream = True
                 ev = getattr(msg, "event", {}) or {}
                 if ev.get("type") == "content_block_delta":
                     delta = ev.get("delta", {}) or {}
@@ -341,6 +343,14 @@ class WarmBrain:
                     buf = ""
                     if tail:
                         yield tail
+            elif t == "AssistantMessage" and not seen_stream:
+                # Fallback if streaming is not used or CLI returns a status block
+                for block in getattr(msg, "content", []) or []:
+                    txt = getattr(block, "text", None)
+                    if txt:
+                        for s in re.split(r'(?<=[.!?])\s+', txt.strip()):
+                            if s.strip():
+                                yield s.strip()
             elif t == "ResultMessage":
                 self._dirty = False    # turn fully consumed — pipe aligned
                 self._tally(msg)
