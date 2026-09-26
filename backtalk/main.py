@@ -78,6 +78,45 @@ from backtalk.vlog import log
 NAME = CFG["name"]
 QUIT_PHRASES = CFG["quit_phrases"]
 
+# ---- TEXT MODE: mic input + screen output, no TTS. --text-mode flag.
+_TEXT_MODE = "--text-mode" in sys.argv
+_SEP = "─" * 64
+
+
+def _print_you(text: str):
+    print(f"\n{_SEP}\n\033[1;33m[You]\033[0m {text}", flush=True)
+
+
+def _print_system(text: str):
+    """For greetings, errors, console responses in text mode."""
+    if text and text.strip():
+        print(f"\n\033[1;36m[{NAME}]\033[0m {text}", flush=True)
+
+
+class _NoopDucker:
+    def speech_start(self): pass
+    def speech_end(self, t=0.0): pass
+
+
+class SilentMouth:
+    """Duck-typed Mouth for text mode: prints instead of speaking."""
+    speaking = False
+    ducker = _NoopDucker()
+
+    def say(self, text: str):
+        _print_system(text)
+
+    def say_chunk(self, text: str, directions=None):
+        # say_chunk is not used in text mode (text_reply bypasses it)
+        if text and text.strip():
+            print(text + " ", end="", flush=True)
+
+    def shut_up(self): pass
+
+    def wait_done(self, timeout=None): pass
+
+    def shutdown(self): pass
+
 # ---- THE SPOKEN PERMISSION GATE (permission_mode "ask", the default).
 # When the agent wants a gated tool, the SDK routes the decision here:
 # the ask is spoken, the turn pauses (the SDK waits indefinitely; the
@@ -596,6 +635,43 @@ def _typed_reader(q: "queue.Queue[str]"):
                 sys.stdout.flush()
 
 
+async def text_reply(brain: WarmBrain, text: str):
+    """Text mode: stream reply to terminal. No TTS."""
+    t0 = time.time()
+    first = True
+    try:
+        async for sentence in brain.ask_stream(text):
+            found = _DIRECTION_TAG.findall(sentence)
+            sentence = _DIRECTION_TAG.sub(" ", sentence)
+            s = " ".join(sentence.replace("`", "").split()).strip()
+            if not s:
+                continue
+            if first:
+                log(f"[{NAME}] ({time.time()-t0:.1f}s to first) {s}")
+                print(f"\n{_SEP}\n\033[1;36m[{NAME}]\033[0m {s} ",
+                      end="", flush=True)
+                first = False
+            else:
+                log(f"[{NAME}] {s}")
+                print(s + " ", end="", flush=True)
+        if not first:
+            print(f"\n{_SEP}", flush=True)
+        if first:
+            signals.static_stop()
+            signals.set_state("idle")
+    except asyncio.CancelledError:
+        if not first:
+            print("\n[interrupted]", flush=True)
+        try:
+            await brain.interrupt()
+        except Exception:
+            pass
+        raise
+    finally:
+        signals.static_stop()
+        signals.set_state("idle")
+
+
 async def speak_reply(brain: WarmBrain, mouth: Mouth, text: str):
     """First sentence ships alone (fast start); the rest go in
     2-sentence breaths — fuller chunks get livelier prosody (single
@@ -679,7 +755,7 @@ async def amain():
         except OSError:
             resume_id = None
 
-    mouth = Mouth()
+    mouth = SilentMouth() if _TEXT_MODE else Mouth()
     ears = Ears()
     brain = WarmBrain(model=model,
                       can_use_tool=make_permission_gate(mouth),
@@ -984,6 +1060,8 @@ async def amain():
         told apart from speech that began before the ask even existed."""
         nonlocal speak_task
         log(f"[you]    {text}")
+        if _TEXT_MODE:
+            _print_you(text)
         if _PAUSED["on"]:
             v = console_match(text)
             if v == "resume":
@@ -1065,7 +1143,10 @@ async def amain():
         # wait on a ResultMessage the CLI is withholding for an answer.
         _deny_pending()
         await brain.reset_turn()
-        speak_task = asyncio.create_task(speak_reply(brain, mouth, text))
+        if _TEXT_MODE:
+            speak_task = asyncio.create_task(text_reply(brain, text))
+        else:
+            speak_task = asyncio.create_task(speak_reply(brain, mouth, text))
         return True
 
     try:
